@@ -50,6 +50,7 @@ const initialAwsSummary = {
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(initialMetrics);
   const [awsSummary, setAwsSummary] = useState(initialAwsSummary);
+  const [awsInsights, setAwsInsights] = useState([]);
   const [ec2Instances, setEc2Instances] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [loadingEC2, setLoadingEC2] = useState(true);
@@ -101,12 +102,13 @@ export default function Dashboard() {
 
         const token = await getToken();
         if (!token) {
-          if (alive) {
-            setAwsSummary(initialAwsSummary);
-            setEc2Instances([]);
-          }
-          return;
-        }
+  if (alive) {
+    setAwsSummary(initialAwsSummary);
+    setAwsInsights([]);
+    setEc2Instances([]);
+  }
+  return;
+} 
 
         const response = await fetch("http://127.0.0.1:8000/aws-metrics", {
           headers: {
@@ -118,6 +120,13 @@ export default function Dashboard() {
         if (!alive) return;
 
         const summary = data?.summary || {};
+        setAwsInsights(
+  Array.isArray(data?.insights)
+    ? data.insights
+    : []
+);
+
+console.log("AWS Insights:", data?.insights);
 
         setAwsSummary({
           cpu_usage: Number(summary.cpu_usage ?? 0),
@@ -305,11 +314,11 @@ export default function Dashboard() {
             </div>
 
             <AIInsightsPanel
-              ai_message={metrics.ai_message || insightMessage}
-              scaling={metrics.scaling || scalingMessage}
-              severity={awsSummary.severity || metrics.severity}
-              health_score={awsSummary.health_score || metrics.health_score}
-            />
+  ai_message={awsInsights.join(" ")}
+  scaling={scalingMessage}
+  severity={awsSummary.severity}
+  health_score={awsSummary.health_score}
+/>
           </section>
 
           {/* Alerts */}

@@ -175,8 +175,6 @@ def aws_metrics(
 
     return get_user_ec2_metrics(user)
 
-    return get_user_ec2_metrics(user)
-
 
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):

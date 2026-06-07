@@ -195,75 +195,6 @@ def get_ec2_instance_status(user, instance_id):
             "system_status": "unknown",
             "status_check_failed": None,
         }
-def generate_operational_insights(summary, instances):
-    insights = []
-
-    cpu = summary.get("cpu_usage", 0)
-    memory = summary.get("memory_usage")
-
-    # CPU Analysis
-    if cpu < 50:
-        insights.append(
-            "CPU utilization is within normal operating limits."
-        )
-    elif cpu < 80:
-        insights.append(
-            "CPU utilization is elevated. Monitor workload trends."
-        )
-    else:
-        insights.append(
-            "High CPU utilization detected. Capacity review recommended."
-        )
-
-    # Memory Analysis
-    if memory is not None:
-        if memory < 70:
-            insights.append(
-                "Memory utilization is healthy."
-            )
-        elif memory < 85:
-            insights.append(
-                "Memory utilization is increasing."
-            )
-        else:
-            insights.append(
-                "Memory pressure detected."
-            )
-
-    # Stopped Instances
-    stopped_instances = [
-        i for i in instances
-        if i.get("state") == "stopped"
-    ]
-
-    if stopped_instances:
-        insights.append(
-            f"{len(stopped_instances)} EC2 instance(s) are currently stopped."
-        )
-
-    # Unhealthy Running Instances
-    unhealthy_instances = [
-        i for i in instances
-        if i.get("state") == "running"
-        and i.get("status_check_failed") == 1
-    ]
-
-    if unhealthy_instances:
-        insights.append(
-            f"{len(unhealthy_instances)} running instance(s) require attention."
-        )
-
-    # Healthy Environment
-    if (
-        cpu < 50
-        and (memory is None or memory < 70)
-        and not unhealthy_instances
-    ):
-        insights.append(
-            "Infrastructure health is stable. No immediate action required."
-        )
-
-    return insights
     
 def get_user_ec2_instances(user):
     try:
@@ -276,6 +207,56 @@ def get_user_ec2_instances(user):
         print("EC2 Error:", e)
         return []
 
+def generate_operational_insights(
+    avg_cpu,
+    avg_memory,
+    alerts,
+    running_instances,
+):
+    insights = []
+
+    if running_instances == 0:
+        insights.append(
+            "No running EC2 instances detected."
+        )
+
+    if avg_cpu < 50:
+        insights.append(
+            f"CPU utilization is normal ({avg_cpu}%)."
+        )
+    elif avg_cpu < 80:
+        insights.append(
+            f"CPU utilization is elevated ({avg_cpu}%)."
+        )
+    else:
+        insights.append(
+            f"High CPU utilization detected ({avg_cpu}%)."
+        )
+
+    if avg_memory is not None:
+        if avg_memory < 70:
+            insights.append(
+                f"Memory utilization is normal ({avg_memory}%)."
+            )
+        elif avg_memory < 85:
+            insights.append(
+                f"Memory utilization is elevated ({avg_memory}%)."
+            )
+        else:
+            insights.append(
+                f"High memory utilization detected ({avg_memory}%)."
+            )
+
+    if alerts == 0:
+        insights.append(
+            "No active infrastructure alerts."
+        )
+    else:
+        insights.append(
+            f"{alerts} active infrastructure alerts detected."
+        )
+
+    return insights
 
 def get_user_ec2_metrics(user):
     try:
@@ -333,9 +314,23 @@ def get_user_ec2_metrics(user):
         health_score = 100 - int(avg_cpu * 0.5) - (int(avg_memory * 0.3) if avg_memory is not None else 0) - (alerts * 10)
         health_score = max(20, min(100, health_score))
 
+        insights = generate_operational_insights(
+    avg_cpu,
+    avg_memory,
+    alerts,
+    len(
+        [
+            i
+            for i in enriched
+            if i.get("state") == "running"
+        ]
+    ),
+)
+
         return {
             "source": "cloudwatch",
-            "region": user.aws_region,
+    "region": user.aws_region,
+    "insights": insights,
             "summary": {
                 "cpu_usage": avg_cpu,
                 "memory_usage": avg_memory,
