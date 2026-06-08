@@ -257,6 +257,140 @@ def generate_operational_insights(
         )
 
     return insights
+def generate_alerts(summary, instances):
+    alerts = []
+
+    avg_cpu = summary.get("cpu_usage", 0.0)
+    avg_memory = summary.get("memory_usage")
+    running_instances = summary.get("running_instances", 0)
+
+    # No running instances
+    if running_instances == 0:
+        alerts.append(
+            {
+                "severity": "critical",
+                "title": "No running EC2 instances",
+                "description": "No EC2 instances are currently running in this account.",
+                "recommendation": "Start at least one production instance or verify deployment health.",
+                "source": "cloudwatch",
+            }
+        )
+
+    # Average CPU thresholds
+    if avg_cpu >= 90:
+        alerts.append(
+            {
+                "severity": "critical",
+                "title": "High average CPU utilization",
+                "description": f"Average EC2 CPU usage is {avg_cpu}%.",
+                "recommendation": "Scale up capacity or inspect the busiest instance.",
+                "source": "cloudwatch",
+            }
+        )
+    elif avg_cpu >= 70:
+        alerts.append(
+            {
+                "severity": "warning",
+                "title": "Elevated average CPU utilization",
+                "description": f"Average EC2 CPU usage is {avg_cpu}%.",
+                "recommendation": "Monitor load and prepare for scaling if usage continues.",
+                "source": "cloudwatch",
+            }
+        )
+
+    # Average memory thresholds
+    if avg_memory is not None:
+        if avg_memory >= 90:
+            alerts.append(
+                {
+                    "severity": "critical",
+                    "title": "High average memory utilization",
+                    "description": f"Average memory usage is {avg_memory}%.",
+                    "recommendation": "Investigate memory pressure and restart or scale services if needed.",
+                    "source": "cloudwatch",
+                }
+            )
+        elif avg_memory >= 75:
+            alerts.append(
+                {
+                    "severity": "warning",
+                    "title": "Elevated average memory utilization",
+                    "description": f"Average memory usage is {avg_memory}%.",
+                    "recommendation": "Watch memory growth and review running processes.",
+                    "source": "cloudwatch",
+                }
+            )
+
+    # Running instance health checks
+    for instance in instances:
+        if instance.get("state") != "running":
+            continue
+
+        if instance.get("status_check_failed") == 1:
+            alerts.append(
+                {
+                    "severity": "critical",
+                    "title": f"Status check failed: {instance.get('name', 'Unknown')}",
+                    "description": (
+                        f"Instance {instance.get('instance_id', '')} is running but failed system or instance checks."
+                    ),
+                    "recommendation": "Inspect the instance logs, network, and OS health immediately.",
+                    "source": "ec2",
+                    "instance_id": instance.get("instance_id"),
+                }
+            )
+
+        if instance.get("cpu_usage", 0) >= 90:
+            alerts.append(
+                {
+                    "severity": "critical",
+                    "title": f"Instance CPU spike: {instance.get('name', 'Unknown')}",
+                    "description": f"{instance.get('name', 'Unknown')} CPU is {instance.get('cpu_usage')}%.",
+                    "recommendation": "Scale this instance or inspect the active workload.",
+                    "source": "cloudwatch",
+                    "instance_id": instance.get("instance_id"),
+                }
+            )
+        elif instance.get("cpu_usage", 0) >= 70:
+            alerts.append(
+                {
+                    "severity": "warning",
+                    "title": f"Instance CPU elevated: {instance.get('name', 'Unknown')}",
+                    "description": f"{instance.get('name', 'Unknown')} CPU is {instance.get('cpu_usage')}%.",
+                    "recommendation": "Monitor workload trends and plan capacity if needed.",
+                    "source": "cloudwatch",
+                    "instance_id": instance.get("instance_id"),
+                }
+            )
+
+        mem = instance.get("memory_usage")
+        if mem is not None and mem >= 90:
+            alerts.append(
+                {
+                    "severity": "critical",
+                    "title": f"Instance memory spike: {instance.get('name', 'Unknown')}",
+                    "description": f"{instance.get('name', 'Unknown')} memory is {mem}%.",
+                    "recommendation": "Investigate memory leaks or memory-heavy workloads.",
+                    "source": "cloudwatch",
+                    "instance_id": instance.get("instance_id"),
+                }
+            )
+        elif mem is not None and mem >= 75:
+            alerts.append(
+                {
+                    "severity": "warning",
+                    "title": f"Instance memory elevated: {instance.get('name', 'Unknown')}",
+                    "description": f"{instance.get('name', 'Unknown')} memory is {mem}%.",
+                    "recommendation": "Review memory usage and prepare for scaling if necessary.",
+                    "source": "cloudwatch",
+                    "instance_id": instance.get("instance_id"),
+                }
+            )
+
+    # Sort critical first, then warning, then info
+    priority = {"critical": 0, "warning": 1, "info": 2}
+    alerts.sort(key=lambda x: priority.get(x.get("severity", "info"), 9))
+    return alerts
 
 def get_user_ec2_metrics(user):
     try:
@@ -269,23 +403,26 @@ def get_user_ec2_metrics(user):
 
         for instance in instances:
             instance_id = instance.get("instance_id", "")
+
             cpu = get_ec2_cpu_usage(user, instance_id)
             memory = get_ec2_memory_usage(user, instance_id)
             status = get_ec2_instance_status(user, instance_id)
 
             if cpu is not None:
                 cpu_values.append(cpu)
+
             if memory is not None:
                 memory_values.append(memory)
+
             if (
                 instance.get("state") == "running"
                 and status.get("status_check_failed") == 1
             ):
                 alerts += 1
 
-            # Treat sustained high CPU as a warning signal.
             if cpu >= 80:
                 alerts += 1
+
             if memory is not None and memory >= 80:
                 alerts += 1
 
@@ -298,53 +435,108 @@ def get_user_ec2_metrics(user):
                 }
             )
 
-        avg_cpu = round(sum(cpu_values) / len(cpu_values), 1) if cpu_values else 0.0
-        avg_memory = round(sum(memory_values) / len(memory_values), 1) if memory_values else None
+        avg_cpu = (
+            round(sum(cpu_values) / len(cpu_values), 1)
+            if cpu_values
+            else 0.0
+        )
+
+        avg_memory = (
+            round(sum(memory_values) / len(memory_values), 1)
+            if memory_values
+            else None
+        )
+
+        running_instances = len(
+            [
+                i
+                for i in enriched
+                if i.get("state") == "running"
+            ]
+        )
 
         severity = "stable"
+
         if any(
             i.get("state") == "running"
             and i.get("status_check_failed") == 1
             for i in enriched
         ):
             severity = "critical"
-        elif avg_cpu >= 70 or (avg_memory is not None and avg_memory >= 75):
+
+        elif (
+            avg_cpu >= 70
+            or (
+                avg_memory is not None
+                and avg_memory >= 75
+            )
+        ):
             severity = "warning"
 
-        health_score = 100 - int(avg_cpu * 0.5) - (int(avg_memory * 0.3) if avg_memory is not None else 0) - (alerts * 10)
-        health_score = max(20, min(100, health_score))
+        health_score = (
+            100
+            - int(avg_cpu * 0.5)
+            - (
+                int(avg_memory * 0.3)
+                if avg_memory is not None
+                else 0
+            )
+            - (alerts * 10)
+        )
+
+        health_score = max(
+            20,
+            min(100, health_score),
+        )
 
         insights = generate_operational_insights(
-    avg_cpu,
-    avg_memory,
-    alerts,
-    len(
-        [
-            i
-            for i in enriched
-            if i.get("state") == "running"
-        ]
-    ),
-)
+            avg_cpu,
+            avg_memory,
+            alerts,
+            running_instances,
+        )
+
+        summary = {
+            "cpu_usage": avg_cpu,
+            "memory_usage": avg_memory,
+            "severity": severity,
+            "health_score": health_score,
+            "alerts": 0,
+            "running_instances": running_instances,
+            "total_instances": len(enriched),
+        }
+
+        alerts_list = generate_alerts(
+            summary,
+            enriched,
+        )
+
+        summary["alerts"] = len(alerts_list)
+
+        if any(
+            alert.get("severity") == "critical"
+            for alert in alerts_list
+        ):
+            summary["severity"] = "critical"
+
+        elif any(
+            alert.get("severity") == "warning"
+            for alert in alerts_list
+        ):
+            summary["severity"] = "warning"
 
         return {
             "source": "cloudwatch",
-    "region": user.aws_region,
-    "insights": insights,
-            "summary": {
-                "cpu_usage": avg_cpu,
-                "memory_usage": avg_memory,
-                "severity": severity,
-                "health_score": health_score,
-                "alerts": alerts,
-                "running_instances": len([i for i in enriched if i.get("state") == "running"]),
-                "total_instances": len(enriched),
-            },
+            "region": user.aws_region,
+            "insights": insights,
+            "summary": summary,
+            "alerts": alerts_list,
             "instances": enriched,
         }
 
     except Exception as e:
         print("AWS Metrics Error:", e)
+
         return {
             "source": "cloudwatch",
             "region": getattr(user, "aws_region", None),
@@ -357,5 +549,6 @@ def get_user_ec2_metrics(user):
                 "running_instances": 0,
                 "total_instances": 0,
             },
+            "alerts": [],
             "instances": [],
         }

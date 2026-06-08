@@ -50,6 +50,7 @@ const initialAwsSummary = {
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(initialMetrics);
   const [awsSummary, setAwsSummary] = useState(initialAwsSummary);
+  const [awsAlerts, setAwsAlerts] = useState([]);
   const [awsInsights, setAwsInsights] = useState([]);
   const [ec2Instances, setEc2Instances] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -118,7 +119,8 @@ export default function Dashboard() {
 
         const data = await response.json();
         if (!alive) return;
-
+        setAwsInsights(Array.isArray(data?.insights) ? data.insights : []);
+        setAwsAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
         const summary = data?.summary || {};
         setAwsInsights(
   Array.isArray(data?.insights)
@@ -334,10 +336,10 @@ console.log("AWS Insights:", data?.insights);
             </div>
 
             <AlertsPanel
-              alerts={awsSummary.alerts || metrics.alerts}
-              severity={awsSummary.severity || metrics.severity}
-              traffic_message={metrics.traffic_message}
-            />
+  alerts={awsAlerts}
+  severity={awsSummary.severity || metrics.severity}
+  traffic_message={metrics.traffic_message}
+/>  
           </section>
         </main>
       </div>
