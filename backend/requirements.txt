@@ -8,3 +8,5 @@ psutil
 docker
 kubernetes
 pydantic
+sqlalchemy
+psycopg2-binary
