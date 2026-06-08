@@ -66,8 +66,12 @@ export default function Dashboard() {
 
       ws = new WebSocket(
         token
-          ? `ws://127.0.0.1:8000/ws/metrics?token=${encodeURIComponent(token)}`
-          : "ws://127.0.0.1:8000/ws/metrics"
+          ? `${import.meta.env.VITE_API_URL
+    .replace("https://", "wss://")
+    .replace("http://", "ws://")}/ws/metrics?token=${encodeURIComponent(token)}`
+          : `${import.meta.env.VITE_API_URL
+    .replace("https://", "wss://")
+    .replace("http://", "ws://")}/ws/metrics`
       );
 
       ws.onopen = () => console.log("WebSocket Connected 🚀");
@@ -111,7 +115,9 @@ export default function Dashboard() {
   return;
 } 
 
-        const response = await fetch("http://127.0.0.1:8000/aws-metrics", {
+        const response = await fetch(
+  `${import.meta.env.VITE_API_URL}/aws-metrics`,
+  {
           headers: {
             Authorization: `Bearer ${token}`,
           },

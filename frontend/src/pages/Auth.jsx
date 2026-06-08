@@ -31,7 +31,7 @@ export default function Auth() {
 
         localStorage.setItem("token", token);
 
-        const response = await fetch("http://127.0.0.1:8000/aws-status", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/aws-status`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
