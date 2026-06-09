@@ -78,18 +78,6 @@ export default function Sidebar() {
           />
 
           <SidebarItem
-            icon={<Boxes size={18} />}
-            text="Kubernetes"
-            to="/kubernetes"
-          />
-
-          <SidebarItem
-            icon={<Server size={18} />}
-            text="Docker"
-            to="/docker"
-          />
-
-          <SidebarItem
             icon={<Shield size={18} />}
             text="Security"
             to="/security"

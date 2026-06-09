@@ -6,7 +6,6 @@ import MetricCard from "../components/MetricCard";
 import AIInsightsPanel from "../components/AIInsightsPanel";
 import LiveChart from "../components/LiveChart";
 import AlertsPanel from "../components/AlertsPanel";
-import K8sPods from "../components/K8sPods";
 import AWSInstances from "../components/AWSInstances";
 import { supabase } from "../supabase";
 
@@ -34,7 +33,6 @@ async function getToken() {
 const initialMetrics = {
   cpu_usage: 0,
   memory_usage: 0,
-  containers: 0,
   alerts: 0,
   health_score: 0,
   severity: "stable",
@@ -42,8 +40,6 @@ const initialMetrics = {
   scaling: "",
   cloud_regions: [],
   traffic_message: "",
-  docker_metrics: [],
-  k8s_pods: [],
 };
 
 const initialAwsSummary = {
@@ -101,7 +97,6 @@ export default function Dashboard() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("DOCKER DATA:", data.docker_metrics);
           setMetrics((prev) => ({ ...prev, ...data }));
         } catch (error) {
           console.error("Invalid websocket payload:", error);
@@ -265,11 +260,6 @@ export default function Dashboard() {
               />
 
               <MetricCard
-                title="Active Containers"
-                value={metrics.containers}
-              />
-
-              <MetricCard
                 title="EC2 Instances"
                 value={awsSummary.running_instances || ec2Instances.length}
               />
@@ -315,10 +305,6 @@ export default function Dashboard() {
             <AWSInstances
               instances={Array.isArray(ec2Instances) ? ec2Instances : []}
               loading={loadingEC2}
-            />
-
-            <K8sPods
-              pods={Array.isArray(metrics.k8s_pods) ? metrics.k8s_pods : []}
             />
           </section>
 

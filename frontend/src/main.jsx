@@ -10,8 +10,6 @@ import ConnectAWS from "./pages/ConnectAWS";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AWSInfrastructure from "./pages/AWSInfrastructure";
-import Kubernetes from "./pages/Kubernetes";
-import Docker from "./pages/Docker";
 import Security from "./pages/Security";
 import Settings from "./pages/Settings";
 
@@ -34,24 +32,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   element={
     <ProtectedRoute>
       <AWSInfrastructure />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/kubernetes"
-  element={
-    <ProtectedRoute>
-      <Kubernetes />
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/docker"
-  element={
-    <ProtectedRoute>
-      <Docker />
     </ProtectedRoute>
   }
 />

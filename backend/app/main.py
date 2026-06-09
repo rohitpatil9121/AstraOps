@@ -7,14 +7,12 @@ from starlette.websockets import WebSocketDisconnect
 from app.database import Base, SessionLocal, engine
 from app.models import User
 from app.supabase_auth import verify_supabase_token
-from app.docker_service import get_running_containers
 from app.aws_service import (
    
     get_user_ec2_instances,
     get_user_ec2_metrics,
      get_user_metric_history,
 )
-from app.k8s_service import get_k8s_pods
 
 import asyncio
 import random
@@ -188,7 +186,7 @@ def aws_metrics_history(
         }
 
     return get_user_metric_history(user)
-    
+
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):
     await websocket.accept()
@@ -196,10 +194,8 @@ async def websocket_metrics(websocket: WebSocket):
         while True:
             cpu = round(psutil.cpu_percent(interval=0.1), 1)
             memory = round(psutil.virtual_memory().percent, 1)
-
-            docker_metrics = get_running_containers()
             containers = len(docker_metrics)
-            k8s_pods = get_k8s_pods()
+
 
             alerts = random.randint(0, 5)
             severity = "stable"
@@ -258,9 +254,7 @@ async def websocket_metrics(websocket: WebSocket):
                     "scaling": scaling,
                     "ai_message": ai_message,
                     "cloud_regions": cloud_regions,
-                    "traffic_message": "🤖 AI recommends balancing traffic across cloud regions.",
-                    "docker_metrics": docker_metrics,
-                    "k8s_pods": k8s_pods,
+                    "traffic_message": " AI recommends balancing traffic across cloud regions.",
                 }
             )
             await asyncio.sleep(2)

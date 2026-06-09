@@ -71,8 +71,6 @@ export default function Auth() {
           </p>
           <div className="mt-10 space-y-4 text-sm">
             <p>✅ AWS EC2 Monitoring</p>
-            <p>✅ Kubernetes Observability</p>
-            <p>✅ Docker Metrics</p>
             <p>✅ Realtime AI Insights</p>
           </div>
         </div>
