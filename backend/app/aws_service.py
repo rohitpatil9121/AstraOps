@@ -478,7 +478,41 @@ def get_user_metric_history(user):
         "cpu": cpu_history,
         "memory": memory_history,
     }
-    
+
+def get_iam_security_summary(user):
+    try:
+        print("IAM FUNCTION CALLED")
+
+        iam = boto3.client(
+            "iam",
+            aws_access_key_id=user.aws_access_key,
+            aws_secret_access_key=user.aws_secret_key,
+            region_name=user.aws_region,
+        )
+
+        summary = iam.get_account_summary()
+
+        print("IAM SUMMARY:", summary)
+
+        return {
+            "users": summary["SummaryMap"].get("Users", 0),
+            "groups": summary["SummaryMap"].get("Groups", 0),
+            "roles": summary["SummaryMap"].get("Roles", 0),
+            "policies": summary["SummaryMap"].get("Policies", 0),
+            "mfa_devices": summary["SummaryMap"].get("MFADevices", 0),
+        }
+
+    except Exception as e:
+        print("IAM ERROR:", e)
+
+        return {
+            "users": 0,
+            "groups": 0,
+            "roles": 0,
+            "policies": 0,
+            "mfa_devices": 0,
+        }
+
 def get_user_ec2_metrics(user):
     try:
         instances = _list_ec2_instances(user)

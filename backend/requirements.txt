@@ -5,8 +5,6 @@ python-dotenv
 supabase
 boto3
 psutil
-docker
-kubernetes
 pydantic
 sqlalchemy
 psycopg2-binary

@@ -10,6 +10,7 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { supabase } from "../supabase";
 
+
 async function getToken() {
   const { data } = await supabase.auth.getSession();
   return data?.session?.access_token || localStorage.getItem("token") || "";
@@ -45,7 +46,7 @@ export default function Security() {
         const token = await getToken();
 
         const response = await fetch(
-          "http://127.0.0.1:8000/aws-metrics",
+  "http://127.0.0.1:8000/security-summary",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -67,6 +68,7 @@ export default function Security() {
   }, []);
 
   const summary = metrics?.summary || {};
+  const iam = metrics?.iam || {};
   const instances = metrics?.instances || [];
   const alerts = metrics?.alerts || [];
 
@@ -195,7 +197,52 @@ export default function Security() {
               </div>
             )}
           </section>
+            <section className="bg-[#111827] border border-slate-800 rounded-2xl p-6">
 
+  <h2 className="text-xl font-semibold text-white mb-5">
+    IAM Overview
+  </h2>
+
+  <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+
+    <div>
+      <p className="text-slate-400 text-sm">Users</p>
+      <p className="text-2xl font-semibold text-white">
+        {iam.users || 0}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-slate-400 text-sm">Groups</p>
+      <p className="text-2xl font-semibold text-white">
+        {iam.groups || 0}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-slate-400 text-sm">Roles</p>
+      <p className="text-2xl font-semibold text-white">
+        {iam.roles || 0}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-slate-400 text-sm">Policies</p>
+      <p className="text-2xl font-semibold text-white">
+        {iam.policies || 0}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-slate-400 text-sm">MFA Devices</p>
+      <p className="text-2xl font-semibold text-cyan-400">
+        {iam.mfa_devices || 0}
+      </p>
+    </div>
+
+  </div>
+
+</section>
           {/* Recommendations */}
           <section className="bg-[#111827] border border-slate-800 rounded-2xl p-6">
 

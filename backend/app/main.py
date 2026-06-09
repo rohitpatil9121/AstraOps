@@ -3,7 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.websockets import WebSocketDisconnect
-
+from app.aws_service import (
+    get_user_ec2_instances,
+    get_user_ec2_metrics,
+    get_user_metric_history,
+    get_iam_security_summary,
+)
 from app.database import Base, SessionLocal, engine
 from app.models import User
 from app.supabase_auth import verify_supabase_token
@@ -187,6 +192,38 @@ def aws_metrics_history(
 
     return get_user_metric_history(user)
 
+@app.get("/security-summary")
+def security_summary(
+    current_user=Depends(verify_supabase_token),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(
+        User.email == current_user.email
+    ).first()
+
+    if not user:
+        return {
+            "aws_connected": False,
+            "region": None,
+            "security_score": 0,
+            "iam": {},
+            "recommendations": [],
+        }
+
+    iam_data = get_iam_security_summary(user)
+
+    return {
+        "aws_connected": True,
+        "region": user.aws_region,
+        "security_score": 95,
+        "iam": iam_data,
+        "recommendations": [
+            "Review IAM policies regularly.",
+            "Enable MFA for all privileged accounts.",
+            "Rotate access keys periodically.",
+        ],
+    }
+
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):
     await websocket.accept()
@@ -194,8 +231,6 @@ async def websocket_metrics(websocket: WebSocket):
         while True:
             cpu = round(psutil.cpu_percent(interval=0.1), 1)
             memory = round(psutil.virtual_memory().percent, 1)
-            containers = len(docker_metrics)
-
 
             alerts = random.randint(0, 5)
             severity = "stable"
