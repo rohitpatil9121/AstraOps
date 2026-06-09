@@ -101,6 +101,7 @@ export default function Dashboard() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log("DOCKER DATA:", data.docker_metrics);
           setMetrics((prev) => ({ ...prev, ...data }));
         } catch (error) {
           console.error("Invalid websocket payload:", error);

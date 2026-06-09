@@ -157,15 +157,39 @@ export default function Security() {
                   </div>
                 ) : (
                   alerts.map((alert, index) => (
-                    <div
-                      key={index}
-                      className="border border-yellow-500/20 bg-yellow-500/10 rounded-xl p-4"
-                    >
-                      <p className="text-yellow-400">
-                        {alert}
-                      </p>
-                    </div>
-                  ))
+  <div
+    key={index}
+    className="border border-slate-700 rounded-xl p-4 bg-slate-900"
+  >
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-white font-medium">
+        {alert.title}
+      </h3>
+
+      <span
+        className={`text-xs px-2 py-1 rounded ${
+          alert.severity === "critical"
+            ? "bg-red-500/20 text-red-400"
+            : "bg-yellow-500/20 text-yellow-400"
+        }`}
+      >
+        {alert.severity}
+      </span>
+    </div>
+
+    <p className="text-slate-300 text-sm">
+      {alert.description}
+    </p>
+
+    <p className="text-cyan-400 text-sm mt-3">
+      Recommendation: {alert.recommendation}
+    </p>
+
+    <p className="text-slate-500 text-xs mt-2">
+      Source: {alert.source}
+    </p>
+  </div>
+))
                 )}
 
               </div>
