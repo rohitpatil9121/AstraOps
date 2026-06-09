@@ -10,6 +10,14 @@ import K8sPods from "../components/K8sPods";
 import AWSInstances from "../components/AWSInstances";
 import { supabase } from "../supabase";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL?.replace(/\/$/, "") ||
+  "http://127.0.0.1:8000";
+
+const WS_BASE_URL = API_BASE_URL.startsWith("https://")
+  ? API_BASE_URL.replace("https://", "wss://")
+  : API_BASE_URL.replace("http://", "ws://");
+
 async function getToken() {
   const { data } = await supabase.auth.getSession();
   const sessionToken = data?.session?.access_token;
@@ -47,6 +55,24 @@ const initialAwsSummary = {
   running_instances: 0,
 };
 
+function buildChartData(history = {}) {
+  const cpuHistory = Array.isArray(history.cpu) ? history.cpu : [];
+  const memoryHistory = Array.isArray(history.memory) ? history.memory : [];
+
+  const memoryByTimestamp = new Map(
+    memoryHistory.map((point) => [point?.timestamp, Number(point?.value ?? 0)])
+  );
+
+  return cpuHistory.map((cpuPoint) => ({
+    time: new Date(cpuPoint.timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    cpu: Number(cpuPoint?.value ?? 0),
+    memory: Number(memoryByTimestamp.get(cpuPoint?.timestamp) ?? 0),
+  }));
+}
+
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(initialMetrics);
   const [awsSummary, setAwsSummary] = useState(initialAwsSummary);
@@ -64,15 +90,11 @@ export default function Dashboard() {
       const token = await getToken();
       if (!alive) return;
 
-      ws = new WebSocket(
-        token
-          ? `${import.meta.env.VITE_API_URL
-    .replace("https://", "wss://")
-    .replace("http://", "ws://")}/ws/metrics?token=${encodeURIComponent(token)}`
-          : `${import.meta.env.VITE_API_URL
-    .replace("https://", "wss://")
-    .replace("http://", "ws://")}/ws/metrics`
-      );
+      const wsUrl = `${WS_BASE_URL}/ws/metrics${
+        token ? `?token=${encodeURIComponent(token)}` : ""
+      }`;
+
+      ws = new WebSocket(wsUrl);
 
       ws.onopen = () => console.log("WebSocket Connected 🚀");
 
@@ -107,39 +129,43 @@ export default function Dashboard() {
 
         const token = await getToken();
         if (!token) {
-  if (alive) {
-    setAwsSummary(initialAwsSummary);
-    setAwsInsights([]);
-    setEc2Instances([]);
-  }
-  return;
-} 
+          if (alive) {
+            setAwsSummary(initialAwsSummary);
+            setAwsInsights([]);
+            setAwsAlerts([]);
+            setEc2Instances([]);
+            setChartData([]);
+          }
+          return;
+        }
 
-        const response = await fetch(
-  `${import.meta.env.VITE_API_URL}/aws-metrics`,
-  {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const [metricsResponse, historyResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/aws-metrics`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE_URL}/aws-metrics-history`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
 
-        const data = await response.json();
+        const data = await metricsResponse.json();
+        const history = await historyResponse.json();
+
         if (!alive) return;
+
         setAwsInsights(Array.isArray(data?.insights) ? data.insights : []);
         setAwsAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
+
         const summary = data?.summary || {};
-        setAwsInsights(
-  Array.isArray(data?.insights)
-    ? data.insights
-    : []
-);
-
-console.log("AWS Insights:", data?.insights);
-
         setAwsSummary({
           cpu_usage: Number(summary.cpu_usage ?? 0),
           memory_usage:
-            summary.memory_usage === null || summary.memory_usage === undefined
+            summary.memory_usage === null ||
+            summary.memory_usage === undefined
               ? null
               : Number(summary.memory_usage),
           health_score: Number(summary.health_score ?? 0),
@@ -149,25 +175,15 @@ console.log("AWS Insights:", data?.insights);
         });
 
         setEc2Instances(Array.isArray(data?.instances) ? data.instances : []);
-
-        setChartData((prev) =>
-          [
-            ...prev,
-            {
-              time: new Date().toLocaleTimeString(),
-              cpu: Number(summary.cpu_usage ?? 0),
-              memory:
-                summary.memory_usage === null || summary.memory_usage === undefined
-                  ? null
-                  : Number(summary.memory_usage),
-            },
-          ].slice(-12)
-        );
+        setChartData(buildChartData(history));
       } catch (error) {
         console.log("AWS Metrics Error:", error);
         if (alive) {
           setAwsSummary(initialAwsSummary);
+          setAwsInsights([]);
+          setAwsAlerts([]);
           setEc2Instances([]);
+          setChartData([]);
         }
       } finally {
         if (alive) setLoadingEC2(false);
@@ -221,7 +237,6 @@ console.log("AWS Insights:", data?.insights);
         <Navbar />
 
         <main className="p-6 md:p-8 space-y-8">
-          {/* Header */}
           <div>
             <h1 className="text-3xl font-semibold text-white">
               Infrastructure Overview
@@ -232,7 +247,6 @@ console.log("AWS Insights:", data?.insights);
             </p>
           </div>
 
-          {/* Metrics */}
           <section>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               <MetricCard
@@ -272,7 +286,6 @@ console.log("AWS Insights:", data?.insights);
             </div>
           </section>
 
-          {/* Infrastructure Health */}
           <section className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-white">
@@ -287,7 +300,6 @@ console.log("AWS Insights:", data?.insights);
             <LiveChart chartData={chartData} />
           </section>
 
-          {/* Resources */}
           <section className="space-y-6">
             <div>
               <h2 className="text-xl font-semibold text-white">
@@ -309,7 +321,6 @@ console.log("AWS Insights:", data?.insights);
             />
           </section>
 
-          {/* Insights */}
           <section className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-white">
@@ -322,14 +333,17 @@ console.log("AWS Insights:", data?.insights);
             </div>
 
             <AIInsightsPanel
-  ai_message={awsInsights.join(" ")}
-  scaling={scalingMessage}
-  severity={awsSummary.severity}
-  health_score={awsSummary.health_score}
-/>
+              ai_message={
+                awsInsights.length > 0
+                  ? awsInsights.join(" ")
+                  : insightMessage
+              }
+              scaling={scalingMessage}
+              severity={awsSummary.severity}
+              health_score={awsSummary.health_score}
+            />
           </section>
 
-          {/* Alerts */}
           <section className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-white">
@@ -342,10 +356,10 @@ console.log("AWS Insights:", data?.insights);
             </div>
 
             <AlertsPanel
-  alerts={awsAlerts}
-  severity={awsSummary.severity || metrics.severity}
-  traffic_message={metrics.traffic_message}
-/>  
+              alerts={awsAlerts}
+              severity={awsSummary.severity || metrics.severity}
+              traffic_message={metrics.traffic_message}
+            />
           </section>
         </main>
       </div>

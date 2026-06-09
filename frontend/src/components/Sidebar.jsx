@@ -13,11 +13,17 @@ function SidebarItem({ icon, text, to }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+        `
+        relative flex items-center gap-3
+        px-4 py-3
+        rounded-xl
+        transition-all duration-200
+        ${
           isActive
-            ? "bg-slate-800 text-white"
-            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-        }`
+            ? "bg-slate-800 border border-slate-700 text-white"
+            : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+        }
+      `
       }
     >
       {({ isActive }) => (
@@ -27,7 +33,10 @@ function SidebarItem({ icon, text, to }) {
           )}
 
           <span className="ml-2">{icon}</span>
-          <span className="font-medium text-sm">{text}</span>
+
+          <span className="font-medium text-sm">
+            {text}
+          </span>
         </>
       )}
     </NavLink>
@@ -37,20 +46,21 @@ function SidebarItem({ icon, text, to }) {
 export default function Sidebar() {
   return (
     <aside className="w-72 min-h-screen bg-[#0B1220] border-r border-slate-800 flex flex-col">
-      {/* Logo */}
+
+      {/* Header */}
       <div className="px-6 py-8 border-b border-slate-800">
         <h1 className="text-2xl font-bold text-white tracking-tight">
           AstraOps
         </h1>
 
-        <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">
-          Cloud Operations Platform
+        <p className="text-xs text-slate-500 mt-1">
+          Cloud Observability Platform
         </p>
       </div>
 
       {/* Navigation */}
       <div className="flex-1 px-4 py-6">
-        <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-4 px-2">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 mb-4 px-2">
           Workspace
         </p>
 
@@ -94,20 +104,38 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-slate-800 p-5">
-        <div className="bg-slate-900 rounded-xl p-4">
-          <p className="text-sm text-white font-medium">
+      <div className="p-4 border-t border-slate-800">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+
+          <p className="text-[11px] uppercase tracking-wider text-slate-500">
             Infrastructure Status
           </p>
 
-          <div className="flex items-center gap-2 mt-2">
-            <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-xs text-slate-400">
+          <div className="flex items-center gap-2 mt-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+
+            <span className="text-sm text-white">
               Monitoring Active
             </span>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-800">
+            <p className="text-[11px] uppercase tracking-wider text-slate-500">
+              Region
+            </p>
+
+            <p className="text-sm text-white mt-1">
+              us-east-1
+            </p>
+          </div>
+
+          <div className="mt-4 text-xs text-slate-500">
+            AstraOps v1.0
+          </div>
+
         </div>
       </div>
+
     </aside>
   );
 }
