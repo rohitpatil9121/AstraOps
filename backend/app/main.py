@@ -9,8 +9,10 @@ from app.models import User
 from app.supabase_auth import verify_supabase_token
 from app.docker_service import get_running_containers
 from app.aws_service import (
+   
     get_user_ec2_instances,
     get_user_ec2_metrics,
+     get_user_metric_history,
 )
 from app.k8s_service import get_k8s_pods
 
@@ -170,7 +172,23 @@ def aws_metrics(
 
     return get_user_ec2_metrics(user)
 
+@app.get("/aws-metrics-history")
+def aws_metrics_history(
+    current_user=Depends(verify_supabase_token),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(
+        User.email == current_user.email
+    ).first()
 
+    if not user:
+        return {
+            "cpu": [],
+            "memory": [],
+        }
+
+    return get_user_metric_history(user)
+    
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):
     await websocket.accept()

@@ -25,7 +25,7 @@ export default function AWSInfrastructure() {
           return;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/user-ec2`,  {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/user-ec2`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

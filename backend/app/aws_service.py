@@ -391,7 +391,94 @@ def generate_alerts(summary, instances):
     priority = {"critical": 0, "warning": 1, "info": 2}
     alerts.sort(key=lambda x: priority.get(x.get("severity", "info"), 9))
     return alerts
+def get_ec2_metric_history(
+    user,
+    instance_id,
+    metric_name,
+    namespace,
+    period=300,
+    lookback_hours=1,
+):
+    try:
+        cloudwatch = _make_cloudwatch_client(user)
 
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(hours=lookback_hours)
+
+        response = cloudwatch.get_metric_statistics(
+            Namespace=namespace,
+            MetricName=metric_name,
+            Dimensions=[
+                {
+                    "Name": "InstanceId",
+                    "Value": instance_id,
+                }
+            ],
+            StartTime=start_time,
+            EndTime=end_time,
+            Period=period,
+            Statistics=["Average"],
+        )
+
+        datapoints = sorted(
+            response.get("Datapoints", []),
+            key=lambda x: x["Timestamp"]
+        )
+
+        return [
+            {
+                "timestamp": point["Timestamp"].isoformat(),
+                "value": round(
+                    float(point["Average"]),
+                    2
+                ),
+            }
+            for point in datapoints
+        ]
+
+    except Exception as e:
+        print("Metric History Error:", e)
+        return []
+
+def get_user_metric_history(user):
+    instances = _list_ec2_instances(user)
+
+    running = next(
+        (
+            i
+            for i in instances
+            if i.get("state") == "running"
+        ),
+        None,
+    )
+
+    if not running:
+        return {
+            "cpu": [],
+            "memory": [],
+        }
+
+    instance_id = running["instance_id"]
+
+    cpu_history = get_ec2_metric_history(
+        user=user,
+        instance_id=instance_id,
+        metric_name="CPUUtilization",
+        namespace="AWS/EC2",
+    )
+
+    memory_history = get_ec2_metric_history(
+        user=user,
+        instance_id=instance_id,
+        metric_name="mem_used_percent",
+        namespace="CWAgent",
+    )
+
+    return {
+        "cpu": cpu_history,
+        "memory": memory_history,
+    }
+    
 def get_user_ec2_metrics(user):
     try:
         instances = _list_ec2_instances(user)
@@ -408,12 +495,13 @@ def get_user_ec2_metrics(user):
             memory = get_ec2_memory_usage(user, instance_id)
             status = get_ec2_instance_status(user, instance_id)
 
-            if cpu is not None:
-                cpu_values.append(cpu)
+            if instance.get("state") == "running":
 
-            if memory is not None:
-                memory_values.append(memory)
+                if cpu is not None:
+                    cpu_values.append(cpu)
 
+                if memory is not None:
+                    memory_values.append(memory)
             if (
                 instance.get("state") == "running"
                 and status.get("status_check_failed") == 1
