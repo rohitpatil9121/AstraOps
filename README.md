@@ -1,238 +1,192 @@
-# AstraOps 🚀
+# AstraOps
 
-AstraOps is a cloud observability and infrastructure monitoring platform built to provide real-time visibility into cloud resources, containers, and Kubernetes workloads. The platform integrates AWS services, Docker, Kubernetes, and AI-powered infrastructure insights through a modern dashboard experience.
+![Status](https://img.shields.io/badge/status-active-22c55e?style=for-the-badge)
+![React](https://img.shields.io/badge/frontend-React%20%2B%20Vite-38bdf8?style=for-the-badge)
+![FastAPI](https://img.shields.io/badge/backend-FastAPI-14b8a6?style=for-the-badge)
+![AWS](https://img.shields.io/badge/cloud-AWS-f59e0b?style=for-the-badge)
 
-## Features
+AstraOps is a cloud observability platform built for **AWS infrastructure monitoring**, **operational intelligence**, and **security visibility**.  
+It brings together EC2 inventory, CloudWatch metrics, alerts, insights, and a clean enterprise-style dashboard.
 
-### Authentication & User Management
+## What AstraOps Does
 
-* Secure user authentication using Supabase
-* JWT-based authorization
-* User-specific AWS credential management
-* Protected routes and session handling
-
-### AWS Infrastructure Monitoring
-
-* Connect personal AWS accounts securely
-* View EC2 instance inventory
-* Display instance metadata:
-
-  * Instance ID
-  * Instance Name
-  * Instance Type
-  * State
-  * Public IP
-* User-specific AWS resource visibility
-
-### Real-Time Monitoring
-
-* WebSocket-based live metrics
-* CPU utilization tracking
-* Memory utilization tracking
-* Container monitoring
-* Infrastructure health monitoring
-
-### Kubernetes Monitoring
-
-* Kubernetes pod discovery
-* Pod status tracking
-* Namespace visibility
-* Restart count monitoring
-
-### Docker Monitoring
-
-* Running container visibility
-* Container statistics collection
-* Real-time container metrics
-
-### AI Infrastructure Insights
-
-* Infrastructure health analysis
-* Alert severity assessment
-* Scaling recommendations
-* Operational insights generation
-
----
+- Monitors AWS EC2 instances in real time
+- Pulls **CloudWatch CPU metrics** directly from AWS
+- Supports **memory monitoring** through CloudWatch Agent
+- Generates **operational insights** from live infrastructure signals
+- Detects **alerts** and risk conditions
+- Displays a **security overview** with IAM and AWS health context
+- Uses **Supabase Auth** for secure login and user sessions
 
 ## Tech Stack
 
-### Frontend
+**Frontend**
+- React
+- Vite
+- Tailwind CSS
+- Framer Motion
+- Lucide React
 
-* React.js
-* Vite
-* Tailwind CSS
-* React Router
-* Recharts
+**Backend**
+- FastAPI
+- boto3
+- SQLAlchemy
+- WebSockets
 
-### Backend
+**Cloud & Auth**
+- AWS EC2
+- AWS CloudWatch
+- CloudWatch Agent
+- IAM
+- Supabase Auth
 
-* FastAPI
-* SQLAlchemy
-* WebSockets
-* Boto3
-* SQLite
+## Screenshots
 
-### Cloud & DevOps
+Add your project screenshots here:
 
-* AWS EC2
-* AWS CloudWatch
-* Docker
-* Kubernetes
+- Login page
+- Dashboard
+- AWS Infrastructure
+- Security Center
 
-### Authentication
+## Core Features
 
-* Supabase Authentication
+### Dashboard
+- CPU Utilization
+- Memory Utilization
+- EC2 Instance Count
+- Active Alerts
+- Health Score
+- Operational Insights
 
----
+### AWS Monitoring
+- EC2 inventory from AWS
+- CloudWatch CPU metrics
+- CloudWatch memory metrics
+- Historical CPU/memory trends
 
-## Architecture
+### Security
+- Security score overview
+- AWS connection status
+- IAM security summary
+- Infrastructure recommendations
 
-```text
-Frontend (React + Vite)
-        │
-        ▼
-FastAPI Backend
-        │
- ┌──────┼─────────┐
- ▼      ▼         ▼
-AWS   Docker   Kubernetes
- │
- ▼
-CloudWatch Metrics
-```
+### Realtime Updates
+- WebSocket-powered live updates
+- Live dashboard refresh
+- Infrastructure signal stream
 
 ## Project Structure
 
 ```text
-astraopsss/
-│
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── aws_service.py
-│   │   ├── docker_service.py
-│   │   ├── k8s_service.py
-│   │   ├── models.py
-│   │   └── supabase_auth.py
-│   │
-│   ├── requirements.txt
-│   └── Dockerfile
-│
+AstraOps/
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── supabase.js
-│   │   └── main.jsx
-│   │
-│   └── package.json
-│
-└── docker-compose.yml
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       └── supabase.js
+└── backend/
+    └── app/
+        ├── main.py
+        ├── aws_service.py
+        ├── supabase_auth.py
+        ├── supabase_client.py
+        ├── docker_service.py
+        └── k8s_service.py
 ```
 
-## Installation
+## Quick Start
 
-### Clone Repository
+### 1) Clone the repository
 
 ```bash
 git clone https://github.com/rohitpatil9121/AstraOps.git
 cd AstraOps
 ```
 
-### Backend Setup
+### 2) Backend setup
 
 ```bash
 cd backend
-
 python -m venv venv
-
 # Windows
 venv\Scripts\activate
+# macOS/Linux
+# source venv/bin/activate
 
 pip install -r requirements.txt
-
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
-Backend URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-### Frontend Setup
+### 3) Frontend setup
 
 ```bash
 cd frontend
-
 npm install
-
 npm run dev
 ```
 
-Frontend URL:
-
-```text
-http://localhost:5173
-```
-
----
-
 ## Environment Variables
 
-### Backend (.env)
+### Frontend `.env`
 
 ```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-```
-
-### Frontend (.env)
-
-```env
+VITE_API_URL=http://127.0.0.1:8000
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
----
+### Backend `.env`
 
-## Current Capabilities
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+DATABASE_URL=your_database_url
+```
 
-* User Authentication
-* AWS Account Integration
-* EC2 Instance Monitoring
-* Real-Time Infrastructure Metrics
-* Kubernetes Pod Monitoring
-* Docker Monitoring
-* AI-Powered Insights Dashboard
+## AWS Permissions Needed
 
----
+For the AWS account/user connected to AstraOps, the following permissions are recommended:
 
-## Future Enhancements
+- `AmazonEC2ReadOnlyAccess`
+- `CloudWatchReadOnlyAccess`
+- `IAMReadOnlyAccess` (for IAM summary features)
 
-* CloudWatch Metrics Integration
-* Memory Utilization Monitoring
-* Multi-Cloud Support
-* Cost Monitoring Dashboard
-* Alerting & Notifications
-* Infrastructure Reports
-* Role-Based Access Control
-* AI Incident Analysis
+For memory metrics, install and configure the **CloudWatch Agent** on the EC2 instance.
 
----
+## API Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/health` | Backend health check |
+| GET | `/aws-status` | Check whether AWS is connected |
+| POST | `/connect-aws` | Save AWS credentials |
+| GET | `/user-ec2` | Return EC2 inventory |
+| GET | `/aws-metrics` | Return CloudWatch summary metrics |
+| GET | `/aws-metrics-history` | Return historical CPU and memory data |
+| GET | `/security-summary` | Return security overview |
+| WS | `/ws/metrics` | Realtime dashboard stream |
+
+## How It Works
+
+1. User signs in with Supabase.
+2. User connects AWS access key, secret key, and region.
+3. Backend fetches EC2 and CloudWatch data using boto3.
+4. Dashboard shows metrics, alerts, insights, and trends.
+5. CloudWatch Agent publishes memory metrics for richer observability.
+
+## Future Improvements
+
+- Cost analytics
+- Security score automation
+- IAM users table
+- Trend statistics cards
+- More detailed AWS architecture views
+
+## License
+
+This project is created for learning, portfolio, and demonstration purposes.
 
 ## Author
 
 **Rohit Patil**
-
-Cloud Computing & DevOps Enthusiast
-
-GitHub: https://github.com/rohitpatil9121
-
----
-
-## License
-
-This project is developed for educational, learning, and portfolio purposes.
